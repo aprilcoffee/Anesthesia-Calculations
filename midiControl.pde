@@ -1,4 +1,3 @@
-
 public class midiControl {
   MidiBus myBus; 
   public int nob[][] = new int[6][3];
