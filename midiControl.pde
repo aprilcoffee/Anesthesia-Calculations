@@ -1,7 +1,7 @@
 public class midiControl {
   MidiBus myBus; 
-  public int nob[][] = new int[6][3];
-  public int slider[] = new int[6];
+  public int nob[][] = new int[8][3];
+  public int slider[] = new int[8];
   /*
   0=zero
    3=red
@@ -17,6 +17,9 @@ public class midiControl {
       ControlChange change = new ControlChange(0, s, 0);
       myBus.sendControllerChange(change); // Send a controllerChange
     }
+    ControlChange change = new ControlChange(0, 48, 3);
+    myBus.sendControllerChange(change);
+
     for (int s=0; s<6; s++) {
       slider[s] = 0;
       for (int i=0; i<3; i++) {
@@ -78,12 +81,12 @@ public class midiControl {
   }
   public void controllerChange(ControlChange change) {
     // Receive a controllerChange
-    //println();
-    //println("Controller Change:");
-    //println("--------");
-    //println("Channel:"+change.channel());
-    //println("Number:"+change.number());
-    //println("Value:"+change.value());
+    println();
+    println("Controller Change:");
+    println("--------");
+    println("Channel:"+change.channel());
+    println("Number:"+change.number());
+    println("Value:"+change.value());
     if (change.channel()==9) {
       slider[change.number()-1]=change.value();
     } else if (change.channel()<6 && change.number()<=3) {

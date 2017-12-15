@@ -8,6 +8,7 @@ import de.voidplus.leapmotion.*;
 LeapMotion leap;
 
 float handX, handY, handZ;
+float handDirX, handDirY, handDirZ;
 midiControl midi = new midiControl();
 MidiBus myBus; // The MidiBus
 Minim minim;
@@ -15,8 +16,7 @@ AudioInput in;
 FFT         fft;
 BeatDetect beat;
 
-PGraphics l, l2, rect, l3;
-
+PGraphics l3;
 float xnoise=0.0;
 float ynoise=5.0;
 float inc=0.06;
@@ -48,13 +48,14 @@ void setup() {
 
   MidiBus.list(); 
   myBus = new MidiBus(this, "Launch Control XL", "Launch Control XL");
+  int totalButton =0;
   for (int y=0; y<360; y+=random(10, 30)) {
     for (int x=0; x<360; x+=random(10, 30)) {
       int K = 260;
       float A = K*cos(radians(x))*cos(radians(y));
       float B = 1.2*K*sin(radians(y));
       float C = K*sin(radians(x))*cos(radians(y));
-      al.add(new BB(A, B, C, x, y));
+      al.add(new BB(totalButton++, A, B, C, x, y));
     }
   }
   minim = new Minim(this);
@@ -88,7 +89,6 @@ void draw() {
   fft = new FFT( in.bufferSize(), in.sampleRate() );
   fft.forward( in.mix );
   beat.detect(in.mix);
-
   if ( beat.isOnset() ) eRadius = 80;
   eRadius *= 0.95;
   if ( eRadius < 20 ) eRadius = 20;
@@ -98,115 +98,32 @@ void draw() {
   cameraY = handZ*sin(radians(handY));
   cameraR = handZ*cos(radians(handX))*cos(radians(handY)) + 
     map(eRadius, 80, 20, -100, 100);
-  camera(cameraX, cameraY, cameraR, 0, 0, 0, 0, 1, 0);
+  camera(cameraX, cameraY, cameraR, 0, 0, 0, 0, 1+handDirY, 0);
   translate(random(-shake, shake), random(-shake, shake));
   if (random(map(shake, 0, 15, 30, 5))>5) {
     background(0);
   }
-  //lights();
   if (mode==1) {
-    camera(0, 0, 500, 0, 0, 0, 0, 1, 0);
-    float noiseX, noiseY;
-    for (float r=0; r<=200; r++) {
-      for (float i=0; i<360; i+=1.2) {
-        float gray=int(noise(xnoise, ynoise)*128)+128;
-        noiseX = r*sin(radians(i+5));
-        noiseY = r*cos(radians(i*map(total, 0, 700, 0, 60)/20));
-        stroke(gray);
-        point(noiseX, noiseY);
-        xnoise=xnoise+inc;
-      }
-      xnoise=0;
-      ynoise=ynoise+inc;
-    }
+    mode1();
   }
-  if (mode>=2 && mode != 4) {
-    //rotate(-1);
-    //lights();
-    for (int s=0; s<al.size(); s++) {
-      ((BB)al.get(s)).update();
-      ((BB)al.get(s)).showT(s);
-    }
+  if (mode>=2) {
+    mode2();
+    mode3();
   } 
-  if (mode>=3) {
-    pushMatrix();
-    drawFFTLine();
-    rotate(-1.5);
-    drawFFTLine();
-    //println(FFTWay);
-    if (FFTWay>3)FFTWay = 3;
-    popMatrix();
-  }
   if (mode==4) {
-
-    pushMatrix();
-    l3.beginDraw();
-    l3.colorMode(HSB);
-    l3.smooth();
-    l3.hint(DISABLE_DEPTH_TEST);
-    l3.blendMode(ADD);
-    if (random(map(shake, 0, 15, 30, 5))>5) {
-      l3.background(0);
-    }
-    //l3.background(0);
-    l3.pushMatrix();
-    l3.colorMode(RGB, 800);
-    for (int i = 0; i < in.bufferSize() - 1; i++)
-    {
-      if (in.mix.get(i)*WaveHeight < 20 && in.mix.get(i)*WaveHeight > -20)
-        l3.stroke(abs(in.mix.get(i))*WaveHeight+150, midi.slider[0]*4);
-
-      else  l3.stroke(198, abs(in.mix.get(i))*WaveHeight+100, abs(in.mix.get(i))*WaveHeight*3, 150);
-      l3.line( i, height/2 + in.left.get(i)*WaveHeight, i+1, height/2 + in.left.get(i+1)*WaveHeight );
-      l3.line( i, height/2 + in.right.get(i)*WaveHeight, i+1, height/2 + in.right.get(i+1)*WaveHeight );
-
-      l3.line( -i, height/2 + in.left.get(i)*WaveHeight, -i-1, height/2 + in.left.get(i+1)*WaveHeight );
-      l3.line( -i, height/2 + in.right.get(i)*WaveHeight, -i-1, height/2 + in.right.get(i+1)*WaveHeight );
-    }
-    l3.popMatrix();
-    l3.pushMatrix();
-    l3.translate(0, height/2);
-    l3.stroke(#E14EF2, 110);
-    for (int i = 0; i < in.bufferSize() - 1; i++)
-    {
-      if (in.mix.get(i)*WaveHeight <50 && in.mix.get(i)*WaveHeight > -50)
-        l3.stroke(abs(in.mix.get(i))*WaveHeight+150, midi.slider[0]*4);
-      else stroke(292, abs(in.mix.get(i))*WaveHeight+50, abs(in.mix.get(i))*WaveHeight*3, 150);
-      l3.line( width/2 + in.left.get(i)*WaveHeight, i, width/2 + in.left.get(i+1)*WaveHeight, i+1);    
-      l3.line( width/2 + in.right.get(i)*WaveHeight, i, width/2 + in.right.get(i+1)*WaveHeight, i+1);
-
-      l3.line( width/2 + in.left.get(i)*WaveHeight, -i, width/2 + in.left.get(i+1)*WaveHeight, -i-1);    
-      l3.line( width/2 + in.right.get(i)*WaveHeight, -i, width/2 + in.right.get(i+1)*WaveHeight, -i-1);
-    }
-    l3.popMatrix();
-    l3.endDraw();
-
-    noStroke();
-    beginShape(TRIANGLE_STRIP);
-    texture(l3);
-    fill(255, 50);
-    int r =  100;
-    vertex(r*cos(radians(0)) * cos(radians(0)), r*sin(radians(0)), r*sin(radians(0)) * cos(radians(0)), 0, 0);
-    for (int t=10; t<360; t+=10) {
-      for (int s=0; s<360; s+=10) {
-        float x, y, z;
-        x = r*cos(radians(s)) * cos(radians(t));
-        y = r*sin(radians(t));
-        z = r*sin(radians(s)) * cos(radians(t));
-        vertex(x, y, z, map(s, 0, 360, 0, 1), map(t, 0, 360, 0, 1));
-        x = r*cos(radians(s)) * cos(radians(t-10));
-        y = r*sin(radians(t-10));
-        z = r*sin(radians(s)) * cos(radians(t-10));
-        vertex(x, y, z, map(s, 0, 360, 0, 1), map(t-10, 0, 360, 0, 1) );
-      }
-    }
-    vertex(r*cos(radians(360)) * cos(radians(360)), r*sin(radians(360)), r*sin(radians(360)) * cos(radians(360)), 1, 1);
-    endShape();
-    popMatrix();
+    mode4();
+    mode3();
   }
+  if (mode==5) {
+    mode1();
+    mode3();
+  }
+  blackStript();
+}
+void blackStript() {
   camera(width/2.0, height/2.0, (height/2.0) / tan(PI*30.0 / 180.0), width/2.0, height/2.0, 0, 0, 1, 0);
   blendMode(BLEND);
-  for (int s=0; s<total; s++) {
+  for (int s=0; s<map(midi.nob[4][0], 0, 127, 0, total/4); s++) {
     noFill();
     stroke(0);
     triangle(random(width), random(height), random(width), random(height), random(width), random(height));
@@ -221,16 +138,19 @@ class BB {
   float origin_av, origin_tv;
   float easing = 0.1;
   float R;
-  BB(float A, float B, float C, float pA, float pT) {
+  float triZ;
+  BB(int MyTAG, float A, float B, float C, float pA, float pT) {
     x = A;
     y = B;
     z = C;
     px = x;
     py = y;
     pz = z;
+    triZ = z;
     R = 260;
     p_a=pA;
     p_t=pT;
+    tag = MyTAG;
     origin_av=random(3);
     origin_tv=random(3);
     //origin_av=0;
@@ -256,7 +176,6 @@ class BB {
   }
   void show() {
     pushMatrix();
-
     pushMatrix();
     stroke(255, 25);
     for (float s=0; s<R; s+=2) {
@@ -269,6 +188,22 @@ class BB {
     popMatrix();
     popMatrix();
   }
+  void showNoise() {
+    float noiseX, noiseY;
+    for (float i=0; i<360; i+=1.2) {
+      float gray=int(noise(xnoise, ynoise)*128)+128;
+      x = tag*sin(radians(i+5));
+      y = tag*cos(radians(i*map(total, 0, 700, 0, 60)/20));
+      stroke(gray);
+      pushMatrix();
+      translate(x, y, map(midi.slider[0], 0, 127, 0, z));
+      point(0, 0);
+      popMatrix();
+      xnoise=xnoise+inc*2;
+    }
+    xnoise=0;
+    ynoise=ynoise+inc*3;
+  }
   void showT(int T) {
     colorMode(HSB, 255);
     fill(100, 100);
@@ -276,8 +211,9 @@ class BB {
     noFill();
     translate(x, y, z);
     //fill(#3811ED, 50);
-    fill(#43E1F5, 50);
-    ellipse(0, 0, 3, 3);
+    fill(#43E1F5, 75);
+    //fill(255);
+    ellipse(0, 0, 2, 2);
     popMatrix();
     for (int s=T+1; s<T+3; s++) {
       if (s>=al.size())break;
@@ -286,7 +222,8 @@ class BB {
         tx = ((BB)al.get(s)).x;
         ty = ((BB)al.get(s)).y;
         tz = ((BB)al.get(s)).z;
-        stroke(map(map(ty, -150, 150, 230, 317), 0, 360, 0, 255), 200, 180, 50);
+
+        stroke(map(map(ty, -150, 150, 230, 317), 0, 360, 0, 255), map(midi.nob[0][0], 0, 127, 0, 200), 180, map(midi.slider[1], 0, 127, 0, 80));
         line(tx, ty, tz, x, y, z);
       }
     }
