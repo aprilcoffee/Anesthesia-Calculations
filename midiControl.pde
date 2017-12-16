@@ -9,7 +9,6 @@ public class midiControl {
    23=orange
    26=yellow
    */
-
   midiControl() {
     MidiBus.list();  
     myBus = new MidiBus(this, "Launch Control XL", "Launch Control XL");
@@ -80,13 +79,13 @@ public class midiControl {
     }
   }
   public void controllerChange(ControlChange change) {
-    // Receive a controllerChange
-    println();
-    println("Controller Change:");
-    println("--------");
-    println("Channel:"+change.channel());
-    println("Number:"+change.number());
-    println("Value:"+change.value());
+    //// Receive a controllerChange
+    //println();
+    //println("Controller Change:");
+    //println("--------");
+    //println("Channel:"+change.channel());
+    //println("Number:"+change.number());
+    //println("Value:"+change.value());
     if (change.channel()==9) {
       slider[change.number()-1]=change.value();
     } else if (change.channel()<6 && change.number()<=3) {

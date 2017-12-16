@@ -3,10 +3,11 @@ import ddf.minim.analysis.*;
 import ddf.minim.signals.*;
 import ddf.minim.effects.*;
 import themidibus.*; //Import the library
+import codeanticode.syphon.*;
 
+SyphonServer server;
 import de.voidplus.leapmotion.*;
 LeapMotion leap;
-
 float handX, handY, handZ;
 float handDirX, handDirY, handDirZ;
 midiControl midi = new midiControl();
@@ -37,8 +38,11 @@ float FFTWay = 0;
 float FFTWayy = 0;
 float totalFFT = 0;
 float totalNum = 0;
-void setup() {
+void settings() {
   fullScreen(P3D);
+  PJOGL.profile=1;
+}
+void setup() {
   al = new ArrayList();
   background(255);
   colorMode(HSB);
@@ -58,6 +62,7 @@ void setup() {
       al.add(new BB(totalButton++, A, B, C, x, y));
     }
   }
+
   minim = new Minim(this);
   in = minim.getLineIn();
   beat = new BeatDetect();
@@ -68,16 +73,16 @@ void setup() {
   fft2 = new FFT(SampleSize, SampleRate);
   fft2.window(FFT.HAMMING); // HAMMING-SANDWICH
   fft2.logAverages(43, 1);
-
   leap = new LeapMotion(this);
-
-
 
   l3 = createGraphics(1280, 800, P3D);
   textureMode(NORMAL);  
   ellipseMode(CENTER);
   rectMode(CENTER);
   imageMode(CENTER);
+
+  //PJOGL.profile=1;
+  server = new SyphonServer(this, "Processing Syphon");
 }
 void draw() {
 
@@ -85,7 +90,7 @@ void draw() {
   checkLeap();
   blendMode(ADD);
 
-  WaveHeight = 500 + random(-250, 250);
+  WaveHeight = 400 + random(-250, 250);
   fft = new FFT( in.bufferSize(), in.sampleRate() );
   fft.forward( in.mix );
   beat.detect(in.mix);
@@ -96,8 +101,7 @@ void draw() {
   float cameraX, cameraY, cameraR;
   cameraX = handZ*sin(radians(handX))*cos(radians(handY));
   cameraY = handZ*sin(radians(handY));
-  cameraR = handZ*cos(radians(handX))*cos(radians(handY)) + 
-    map(eRadius, 80, 20, -100, 100);
+  cameraR = handZ*cos(radians(handX))*cos(radians(handY)) + map(eRadius, 80, 20, -150, 100);
   camera(cameraX, cameraY, cameraR, 0, 0, 0, 0, 1+handDirY, 0);
   translate(random(-shake, shake), random(-shake, shake));
   if (random(map(shake, 0, 15, 30, 5))>5) {
@@ -106,19 +110,24 @@ void draw() {
   if (mode==1) {
     mode1();
   }
-  if (mode>=2) {
+  if (mode>=2 && mode <= 4) {
     mode2();
     mode3();
   } 
   if (mode==4) {
     mode4();
-    mode3();
   }
   if (mode==5) {
+    mode4();
+    mode3();
+  }
+  if (mode==6) {
     mode1();
     mode3();
   }
   blackStript();
+
+  server.sendScreen();
 }
 void blackStript() {
   camera(width/2.0, height/2.0, (height/2.0) / tan(PI*30.0 / 180.0), width/2.0, height/2.0, 0, 0, 1, 0);
@@ -202,7 +211,7 @@ class BB {
       xnoise=xnoise+inc*2;
     }
     xnoise=0;
-    ynoise=ynoise+inc*3;
+    ynoise=ynoise+inc*4;
   }
   void showT(int T) {
     colorMode(HSB, 255);
@@ -211,10 +220,13 @@ class BB {
     noFill();
     translate(x, y, z);
     //fill(#3811ED, 50);
-    fill(#43E1F5, 75);
+    fill(#43E1F5, midi.nob[1][0]*2);
     //fill(255);
     ellipse(0, 0, 2, 2);
     popMatrix();
+    if (mode==4) {
+      R = map(midi.nob[3][0], 0, 127, 260, 1500);
+    }
     for (int s=T+1; s<T+3; s++) {
       if (s>=al.size())break;
       else {
@@ -223,7 +235,7 @@ class BB {
         ty = ((BB)al.get(s)).y;
         tz = ((BB)al.get(s)).z;
 
-        stroke(map(map(ty, -150, 150, 230, 317), 0, 360, 0, 255), map(midi.nob[0][0], 0, 127, 0, 200), 180, map(midi.slider[1], 0, 127, 0, 80));
+        stroke(map(map(ty, -150, 150, 230, 317), 0, 360, 0, 255), map(midi.nob[0][0], 0, 127, 0, 200), 180, map(midi.slider[1], 0, 127, 0, 200));
         line(tx, ty, tz, x, y, z);
       }
     }
